@@ -1,0 +1,26 @@
+# Dependències del projecte (pesen molt, no es pugen)
+node_modules/
+
+# Variables d'entorn (SEGURETAT: Conté contrasenyes)
+.env
+
+# Arxius del sistema operatiu (basura)
+.DS_Store
+Thumbs.db
+
+# Imatges pujades localment
+# Ignorem tot el que hi hagi dins de uploads...
+uploads/*
+# ...excepte el fitxer .gitkeep (per mantenir la carpeta)
+!uploads/.gitkeep
+
+# Ignorar comprimidos y documentos basura
+*.zip
+*.rar
+*.pdf
+*.docx
+
+# Logs d'errors
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
