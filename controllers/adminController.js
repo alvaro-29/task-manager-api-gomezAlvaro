@@ -47,4 +47,42 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
+exports.getUserPermissions = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId).populate({
+            path: 'roles',
+            populate: {
+                path: 'permissions',
+                model: 'Permission'
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Usuari no trobat' });
+        }
+
+        // Aplanar todos los permisos de todos los roles en una sola lista
+        let allPermissions = [];
+        user.roles.forEach(role => {
+            allPermissions = [...allPermissions, ...role.permissions];
+        });
+
+        // Eliminar duplicados (por si dos roles tienen el mismo permiso)
+        const uniquePermissions = [...new Set(allPermissions.map(p => JSON.stringify(p)))].map(p => JSON.parse(p));
+
+        res.status(200).json({
+            success: true,
+            data: {
+                userId: user._id,
+                userName: user.name,
+                permissions: uniquePermissions
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Error al obtenir permisos' });
+    }
+};
+
 // Fet per Álvaro Gómez Fernández

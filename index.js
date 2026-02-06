@@ -3,14 +3,20 @@
 // Carregar variables d'entorn
 require('dotenv').config();
 
+const seedPermissions = require('./utils/seedPermissions');
+const seedRoles = require('./utils/seedRoles');
+
 // Importar llibreries necessàries
 const mongoose = require('mongoose');
 const app = require('./app');
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
+    .then(async () => {
         console.log('Connexió a MongoDB establerta');
         
+        await seedPermissions();
+        await seedRoles();
+
         // Iniciar el servidor
         app.listen(process.env.PORT, () => {
             console.log(`Servidor en funcionament a http://localhost:${process.env.PORT}`);

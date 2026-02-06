@@ -3,7 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors') ;
-const path = require('path');  // Importem 'path' per a rutes estàtiques
+const path = require('path');
 
 const app = express(); // Inicialitzar Express
 
@@ -26,11 +26,15 @@ const taskRoutes = require('./routes/taskRoutes');
 const uploadRoutes = require('./routes/uploadRoutes')
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const permissionRoutes = require('./routes/permissionRoutes');
 
 app.use('/api/tasks', taskRoutes);  // Afegir les rutes de tasques
 app.use('/api/upload', uploadRoutes);
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/audit-logs', auditRoutes);
+app.use('/api/admin/permissions', permissionRoutes);
 
 module.exports = app;  // Exportar l'aplicació
 

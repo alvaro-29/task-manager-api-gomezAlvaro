@@ -23,11 +23,10 @@ const UserSchema = new mongoose.Schema({
         minlength: 6,
         select: false // Per defecte no retornem la contrasenya en les consultes (seguretat)
     },
-    role: {
-        type: String,
-        enum: ['user', 'admin'], // Només permetem aquests dos valors
-        default: 'user'
-    },
+    roles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role'
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -58,6 +57,32 @@ UserSchema.methods.toJSON = function() {
     delete userObject.password;
     return userObject;
 }
+
+UserSchema.methods.getEffectivePermissions = async function() {
+    // 1. Omplim (populate) les dades dels rols i els seus permisos
+    // Això converteix els IDs en els objectes reals de la base de dades
+    await this.populate({
+        path: 'roles',
+        populate: {
+            path: 'permissions'
+        }
+    });
+
+    // Utilitzem un Set per evitar permisos duplicats
+    // (Si ets 'editor' i 'admin', els dos tenen 'tasks:read', no volem tenir-lo dos cops)
+    const permissionsSet = new Set();
+
+    // Recorrem cada rol de l'usuari
+    this.roles.forEach(role => {
+        // Recorrem cada permís dins del rol
+        role.permissions.forEach(permission => {
+            permissionsSet.add(permission.name); // Afegim el nom (ex: 'tasks:create')
+        });
+    });
+
+    // Retornem un array amb els permisos únics
+    return Array.from(permissionsSet);
+};
 
 // Exportem el model per poder-lo usar a altres fitxers
 module.exports = mongoose.model('User', UserSchema);

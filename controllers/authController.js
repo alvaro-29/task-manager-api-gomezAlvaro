@@ -3,10 +3,8 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { validationResult } = require('express-validator');
+const Role = require('../models/Role');
 
-// @desc    Registrar un nou usuari
-// @route   POST /api/auth/register
-// @access  Public
 exports.register = async (req, res) => {
   // Revisem si hi ha errors de validació (els que hem definit al middleware validators)
     const errors = validationResult(req);
@@ -27,13 +25,24 @@ exports.register = async (req, res) => {
         });
     }
 
+    // Busque el rol 'user' a la BD
+    const userRole = await Role.findOne({ name: 'user' });
+
+        // Per seguretat, si per algun motiu no existeix el rol (no has fet el seed), donem error
+        if (!userRole) {
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Error del sistema: No existeix el rol "user" a la BD.' 
+            });
+        }
+
     // Creem el nou usuari
     // La contrasenya es xifrarà automàticament gràcies al middleware 'pre-save' del model User
     user = await User.create({
         name,
         email,
         password,
-        role: 'user' // Forcem que el rol sigui sempre 'user' al registrar-se
+        roles: [userRole._id]
     });
 
     // 4. Generem el token JWT perquè l'usuari quedi loguejat directament
@@ -49,7 +58,7 @@ exports.register = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
+                roles: ['user'],
                 createdAt: user.createdAt
             }
         }
@@ -211,6 +220,53 @@ exports.getMe = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+};
+
+exports.checkPermission = async (req, res) => {
+    try {
+        const { permission } = req.body;
+        const user = req.user; // L'usuari ja ve del middleware 'protect'
+
+        // 1. Tornem a buscar l'usuari per carregar els seus Rols i Permisos
+        // (El req.user del middleware de vegades no porta els 'populate' fets)
+        const User = require('../models/User'); // Assegura't de tenir el model
+        const userFull = await User.findById(user._id).populate({
+            path: 'roles',
+            populate: { path: 'permissions' }
+        });
+
+        // 2. Revisem si algun dels seus rols té el permís que busquem
+        let hasPermission = false;
+        
+        // Si és ADMIN del sistema, té permís per tot (opcional, però recomanable)
+        const isAdmin = userFull.roles.some(r => r.name === 'admin');
+        if (isAdmin) hasPermission = true;
+        
+        // Si no és admin, busquem el permís explícitament
+        if (!hasPermission) {
+            hasPermission = userFull.roles.some(role => 
+                role.permissions.some(p => p.name === permission)
+            );
+        }
+
+        if (hasPermission) {
+            return res.status(200).json({
+                success: true,
+                hasPermission: true,
+                message: "Tens permís per fer aquesta acció"
+            });
+        } else {
+            return res.status(403).json({
+                success: false,
+                hasPermission: false,
+                message: "No tens permís per fer aquesta acció"
+            });
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Error al verificar permís' });
     }
 };
 

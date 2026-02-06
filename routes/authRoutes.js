@@ -2,15 +2,21 @@
 
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe, updateProfile, changePassword } = require('../controllers/authController');
-const protect = require('../middleware/auth');
-const { registerValidation, loginValidation, updateProfileValidation, changePasswordValidation } = require('../middleware/validators/authValidators');
 
-router.post('/register', registerValidation, register);
-router.post('/login', loginValidation, login);
-router.get('/me', protect, getMe);
-router.put('/profile', protect, updateProfileValidation, updateProfile);
-router.put('/change-password', protect, changePasswordValidation, changePassword);
+// 1. IMPORTEM EL CONTROLADOR COM UN OBJECTE SENCER ('authController')
+const authController = require('../controllers/authController');
+
+// 2. IMPORTEM EL MIDDLEWARE
+const protect = require('../middleware/auth');
+
+// --- RUTES ---
+
+// Registre i Login (fan servir authController.funcio)
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+
+// NOVA RUTA: Verificar permís (protegida)
+router.post('/check-permission', protect, authController.checkPermission);
 
 module.exports = router;
 
